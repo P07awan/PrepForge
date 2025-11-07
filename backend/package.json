@@ -1,0 +1,57 @@
+{
+  "name": "prepforge-backend",
+  "version": "1.0.0",
+  "description": "PrepForge Backend - AI-Powered Interview Platform",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "test": "jest"
+  },
+  "keywords": [
+    "interview",
+    "ai",
+    "webrtc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^5.7.0",
+    "@types/nodemailer": "^7.0.2",
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "groq-sdk": "^0.3.3",
+    "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.11.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.2",
+    "nodemailer": "^7.0.9",
+    "openai": "^4.20.0",
+    "pdf-parse": "^2.2.9",
+    "socket.io": "^4.6.0",
+    "stripe": "^14.7.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^20.10.4",
+    "@types/pdf-parse": "^1.1.5",
+    "nodemon": "^3.0.2",
+    "prisma": "^5.7.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
