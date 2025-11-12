@@ -46,7 +46,7 @@ export default function Layout({ children }: LayoutProps) {
               {/* Role-based navigation - Candidates schedule, Interviewers receive requests */}
               {user?.role === 'INTERVIEWER' ? (
                 <Link
-                  to="/live-interview"
+                  to="/interview-requests"
                   className="flex items-center space-x-1 text-gray-700 hover:text-primary-600"
                 >
                   <Video className="w-4 h-4" />

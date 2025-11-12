@@ -2,15 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
-  BrainCircuit, 
-  Video, 
   Calendar, 
   TrendingUp, 
-  Bell, 
   Clock, 
   User, 
-  CheckCircle, 
-  XCircle,
+  CheckCircle,
   UserCheck
 } from 'lucide-react';
 import api from '../services/api';
@@ -47,6 +43,7 @@ interface DashboardData {
   interviewer: {
     upcoming: InterviewData[];
     today: InterviewData[];
+    pendingRequests: InterviewData[]; // Add pending requests
     total: number;
     completed: number;
     averageRating: number;
@@ -66,42 +63,28 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log('User object:', user);
+    console.log('User email:', user?.email);
+    console.log('User role:', user?.role);
+    console.log('ViewMode:', viewMode);
+    console.log('Is INTERVIEWER?:', user?.role === 'INTERVIEWER');
+  }, [user, viewMode]);
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const response = await api.get('/api/dashboard/unified');
+      const response = await api.get('/dashboard/unified');
       setDashboardData(response.data);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAcceptInterview = async (interviewId: string) => {
-    try {
-      await api.post(`/api/dashboard/interviewer/requests/${interviewId}/accept`);
-      fetchDashboardData(); // Refresh data
-      alert('Interview accepted successfully!');
-    } catch (error) {
-      console.error('Failed to accept interview:', error);
-      alert('Failed to accept interview. Please try again.');
-    }
-  };
-
-  const handleDeclineInterview = async (interviewId: string) => {
-    if (!confirm('Are you sure you want to decline this interview?')) return;
-    
-    try {
-      await api.post(`/api/dashboard/interviewer/requests/${interviewId}/decline`);
-      fetchDashboardData(); // Refresh data
-      alert('Interview declined.');
-    } catch (error) {
-      console.error('Failed to decline interview:', error);
-      alert('Failed to decline interview. Please try again.');
     }
   };
 
@@ -132,45 +115,96 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex justify-center items-center">
+        <div className="text-center">
+          <div className="relative w-24 h-24 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-ping"></div>
+            <div className="relative w-24 h-24 rounded-full border-4 border-t-blue-600 border-r-purple-600 border-b-pink-600 border-l-blue-300 animate-spin"></div>
+          </div>
+          <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.firstName}! 👋
-            </h1>
-            <p className="text-gray-600">
-              {user?.role === 'INTERVIEWER' 
-                ? 'Manage interview requests and conduct sessions with candidates.'
-                : user?.role === 'CANDIDATE'
-                ? 'Schedule interviews and practice your skills to ace your next job!'
-                : 'Manage your interviews and track your progress from both perspectives.'}
-            </p>
-          </div>
-          <div className="text-right">
-            <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              user?.role === 'INTERVIEWER' 
-                ? 'bg-purple-100 text-purple-800' 
-                : 'bg-blue-100 text-blue-800'
-            }`}>
-              {user?.role === 'INTERVIEWER' ? '👨‍🏫 Interviewer' : '👤 Candidate'}
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        {/* Hero Welcome Card with Gradient Border */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="relative bg-white rounded-3xl p-8 shadow-xl">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                    Welcome back, {user?.firstName}! 👋
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    {user?.role === 'INTERVIEWER' 
+                      ? 'Manage your scheduled interviews and help candidates succeed.'
+                      : 'Track your interview journey and prepare for success!'}
+                  </p>
+                  <div className="mt-3">
+                    <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
+                      user?.role === 'INTERVIEWER' 
+                        ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' 
+                        : 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border border-blue-200'
+                    }`}>
+                      {user?.role === 'INTERVIEWER' ? '👨‍🏫 Interviewer Mode' : '👤 Candidate Mode'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-4 lg:gap-6">
+                <div className="group/card relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl blur-sm opacity-0 group-hover/card:opacity-70 transition-opacity"></div>
+                  <div className="relative text-center px-6 py-5 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 hover:shadow-lg transition-all">
+                    <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                    <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                      {dashboardData?.stats.totalUpcoming || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Upcoming</div>
+                  </div>
+                </div>
+                
+                <div className="group/card relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl blur-sm opacity-0 group-hover/card:opacity-70 transition-opacity"></div>
+                  <div className="relative text-center px-6 py-5 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200 hover:shadow-lg transition-all">
+                    <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-3xl font-bold bg-gradient-to-br from-green-600 to-green-700 bg-clip-text text-transparent">
+                      {dashboardData?.stats.totalCompleted || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Completed</div>
+                  </div>
+                </div>
+                
+                <div className="group/card relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl blur-sm opacity-0 group-hover/card:opacity-70 transition-opacity"></div>
+                  <div className="relative text-center px-6 py-5 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 hover:shadow-lg transition-all">
+                    <Clock className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                    <div className="text-3xl font-bold bg-gradient-to-br from-purple-600 to-purple-700 bg-clip-text text-transparent">
+                      {dashboardData?.stats.todayTotal || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Today</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+
 
 
 
       {/* Stats Overview - Role Specific */}
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -195,28 +229,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {user?.role === 'INTERVIEWER' ? (
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Pending Requests</p>
-                <p className="text-3xl font-bold text-gray-900">{dashboardData?.stats.pendingRequests || 0}</p>
-              </div>
-              <Bell className="w-12 h-12 text-orange-600 opacity-20" />
-            </div>
-          </div>
-        ) : (
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Awaiting Confirmation</p>
-                <p className="text-3xl font-bold text-gray-900">{dashboardData?.stats.pendingRequests || 0}</p>
-              </div>
-              <Clock className="w-12 h-12 text-yellow-600 opacity-20" />
-            </div>
-          </div>
-        )}
-
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -226,56 +238,6 @@ export default function DashboardPage() {
             <Clock className="w-12 h-12 text-secondary-600 opacity-20" />
           </div>
         </div>
-      </div>
-
-      {/* Quick Actions - Role Specific */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Link
-          to="/ai-interview"
-          className="card hover:shadow-lg transition-shadow cursor-pointer group"
-        >
-          <div className="flex items-start space-x-4">
-            <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-200 transition-colors">
-              <BrainCircuit className="w-8 h-8 text-primary-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {user?.role === 'INTERVIEWER' ? 'Practice with AI' : 'Start AI Interview'}
-              </h3>
-              <p className="text-gray-600">
-                {user?.role === 'INTERVIEWER' 
-                  ? 'Improve your interviewing skills with AI practice sessions.'
-                  : 'Practice with our AI interviewer and get instant feedback.'}
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          to="/live-interview"
-          className="card hover:shadow-lg transition-shadow cursor-pointer group"
-        >
-          <div className="flex items-start space-x-4">
-            <div className="p-3 bg-secondary-100 rounded-lg group-hover:bg-secondary-200 transition-colors">
-              <Video className="w-8 h-8 text-secondary-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {user?.role === 'INTERVIEWER' ? 'Interview Requests' : 'Schedule Interview'}
-              </h3>
-              <p className="text-gray-600">
-                {user?.role === 'INTERVIEWER'
-                  ? 'View and manage pending interview requests from candidates.'
-                  : 'Book a session with an experienced interviewer.'}
-              </p>
-              {user?.role === 'INTERVIEWER' && dashboardData && dashboardData.stats.pendingRequests > 0 && (
-                <span className="inline-block mt-2 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  {dashboardData.stats.pendingRequests} Pending
-                </span>
-              )}
-            </div>
-          </div>
-        </Link>
       </div>
 
       {/* Resume Tools Section - Only for Candidates */}
@@ -380,37 +342,11 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {dashboardData.candidate.upcoming.length > 0 ? (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Upcoming Interviews</h3>
-                <div className="space-y-3">
-                  {dashboardData.candidate.upcoming.filter(i => !dashboardData.candidate.today.includes(i)).map((interview) => (
-                    <div key={interview.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-lg text-gray-900">{interview.topic}</h4>
-                          <p className="text-sm text-gray-600">
-                            With: {interview.interviewer?.firstName} {interview.interviewer?.lastName}
-                          </p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {new Date(interview.scheduledAt).toLocaleDateString()} at {new Date(interview.scheduledAt).toLocaleTimeString()} • {interview.duration} min
-                          </p>
-                        </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                          Confirmed
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
+            {dashboardData.candidate.today.length === 0 && (
               <div className="text-center py-12">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No upcoming interviews scheduled.</p>
-                <Link to="/live-interview" className="btn btn-primary mt-4 inline-block">
-                  Schedule Interview
-                </Link>
+                <p className="text-gray-600">No interviews scheduled for today.</p>
+                <p className="text-gray-500 text-sm mt-2">Visit "Schedule Interview" to view and manage all your interview requests.</p>
               </div>
             )}
           </div>
@@ -432,55 +368,6 @@ export default function DashboardPage() {
                 </span>
               )}
             </h2>
-
-            {dashboardData.interviewer.upcoming.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                  <Bell className="w-5 h-5 mr-2" />
-                  Pending Requests ({dashboardData.interviewer.upcoming.length})
-                </h3>
-                <div className="space-y-3">
-                  {dashboardData.interviewer.upcoming.map((interview) => (
-                    <div key={interview.id} className="border-2 border-orange-300 bg-orange-50 rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">NEW</span>
-                            <h4 className="font-semibold text-lg text-gray-900">{interview.topic}</h4>
-                          </div>
-                          <p className="text-sm text-gray-700">
-                            From: <span className="font-medium">{interview.candidate?.firstName} {interview.candidate?.lastName}</span>
-                            <span className="text-gray-500"> ({interview.candidate?.email})</span>
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            📅 {new Date(interview.scheduledAt).toLocaleDateString()} at {new Date(interview.scheduledAt).toLocaleTimeString()}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            ⏱️ {interview.duration} minutes • {interview.interviewType}
-                          </p>
-                        </div>
-                        <div className="flex flex-col space-y-2 ml-4">
-                          <button
-                            onClick={() => handleAcceptInterview(interview.id)}
-                            className="flex items-center space-x-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Accept</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeclineInterview(interview.id)}
-                            className="flex items-center space-x-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            <span>Decline</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {dashboardData.interviewer.today.length > 0 && (
               <div className="mb-6">
@@ -519,16 +406,18 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {dashboardData.interviewer.upcoming.length === 0 && dashboardData.interviewer.today.length === 0 && (
+            {dashboardData.interviewer.today.length === 0 && (
               <div className="text-center py-12">
                 <UserCheck className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No pending interview requests.</p>
-                <p className="text-gray-500 text-sm mt-2">You'll be notified when someone schedules an interview with you.</p>
+                <p className="text-gray-600">No interviews scheduled for today.</p>
+                <p className="text-gray-500 text-sm mt-2">Check the "Interview Requests" page to review pending requests.</p>
               </div>
             )}
           </div>
         </div>
       )}
+      
+      </div>
     </div>
   );
 }
