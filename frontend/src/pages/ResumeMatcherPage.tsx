@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, FileText, CheckCircle, XCircle, TrendingUp, TrendingDown, Award, ArrowLeft } from 'lucide-react';
+import { Upload, CheckCircle, XCircle, TrendingUp, TrendingDown, Award, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function ResumeMatcherPage() {

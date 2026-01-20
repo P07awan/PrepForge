@@ -1,17 +1,9 @@
-import Groq from 'groq-sdk';
-import OpenAI from 'openai';
+import axios from 'axios';
 import { logger } from '../utils/logger';
 
-// Initialize AI clients
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const USE_GROQ = process.env.GROQ_API_KEY ? true : false;
+// ML Model API Configuration
+const ML_MODEL_API_URL = process.env.ML_MODEL_API_URL || 'http://localhost:5000';
+const ML_MODEL_API_KEY = process.env.ML_MODEL_API_KEY || '';
 
 interface Question {
   text: string;
@@ -32,55 +24,32 @@ export const generateAIQuestions = async (
     Question types can be: TECHNICAL, BEHAVIORAL, CODING, OPEN_ENDED.
     Make questions realistic and relevant to actual interviews.`;
 
-    let response;
+    // Call your ML model API
+    const response = await axios.post(
+      `${ML_MODEL_API_URL}/api/generate-questions`,
+      {
+        interviewType,
+        topic,
+        difficulty,
+        count,
+        prompt,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(ML_MODEL_API_KEY && { 'Authorization': `Bearer ${ML_MODEL_API_KEY}` }),
+        },
+        timeout: 30000, // 30 second timeout
+      }
+    );
 
-    if (USE_GROQ) {
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert technical interviewer. Generate realistic interview questions.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        model: 'llama-3.1-70b-versatile',
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
-      response = completion.choices[0]?.message?.content;
-    } else {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert technical interviewer. Generate realistic interview questions.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
-      response = completion.choices[0]?.message?.content;
+    // Assuming your ML model returns { questions: [...] }
+    const questions: Question[] = response.data.questions || response.data;
+    
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new Error('Invalid response from ML model');
     }
 
-    if (!response) {
-      throw new Error('No response from AI');
-    }
-
-    // Parse JSON response
-    const jsonMatch = response.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('Invalid JSON response from AI');
-    }
-
-    const questions: Question[] = JSON.parse(jsonMatch[0]);
     return questions;
   } catch (error) {
     logger.error('Generate AI questions error:', error);
@@ -124,56 +93,35 @@ export const analyzeResponse = async (
     - improvements (array): Areas for improvement
     - feedback (string): Overall constructive feedback`;
 
-    let analysisResponse;
+    // Call your ML model API for analysis
+    const mlResponse = await axios.post(
+      `${ML_MODEL_API_URL}/api/analyze-response`,
+      {
+        question,
+        response,
+        interviewType,
+        prompt,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(ML_MODEL_API_KEY && { 'Authorization': `Bearer ${ML_MODEL_API_KEY}` }),
+        },
+        timeout: 30000,
+      }
+    );
 
-    if (USE_GROQ) {
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert interviewer analyzing candidate responses.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        model: 'llama-3.1-70b-versatile',
-        temperature: 0.5,
-        max_tokens: 1000,
-      });
-      analysisResponse = completion.choices[0]?.message?.content;
-    } else {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert interviewer analyzing candidate responses.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 1000,
-      });
-      analysisResponse = completion.choices[0]?.message?.content;
-    }
-
-    if (!analysisResponse) {
-      throw new Error('No analysis response from AI');
-    }
-
-    // Parse JSON response
-    const jsonMatch = analysisResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid JSON response from AI');
-    }
-
-    const analysis = JSON.parse(jsonMatch[0]);
-    return analysis;
+    // Assuming your ML model returns the analysis object directly
+    const analysis = mlResponse.data.analysis || mlResponse.data;
+    
+    return {
+      confidence: analysis.confidence || 70,
+      technicalScore: analysis.technicalScore || 70,
+      communicationScore: analysis.communicationScore || 70,
+      strengths: analysis.strengths || ['Response provided'],
+      improvements: analysis.improvements || ['Could provide more detail'],
+      feedback: analysis.feedback || 'Good attempt. Consider elaborating more on your answer.',
+    };
   } catch (error) {
     logger.error('Analyze response error:', error);
     // Return default analysis
@@ -190,14 +138,24 @@ export const analyzeResponse = async (
 
 export const transcribeAudio = async (audioBuffer: Buffer): Promise<string> => {
   try {
-    // This would use Whisper API for audio transcription
-    // Placeholder implementation
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioBuffer as any,
-      model: 'whisper-1',
-    });
+    // Call your ML model API for audio transcription
+    const formData = new FormData();
+    const audioBlob = new Blob([audioBuffer]);
+    formData.append('audio', audioBlob, 'audio.wav');
 
-    return transcription.text;
+    const transcriptionResponse = await axios.post(
+      `${ML_MODEL_API_URL}/api/transcribe-audio`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(ML_MODEL_API_KEY && { 'Authorization': `Bearer ${ML_MODEL_API_KEY}` }),
+        },
+        timeout: 60000, // 60 seconds for audio processing
+      }
+    );
+
+    return transcriptionResponse.data.text || transcriptionResponse.data;
   } catch (error) {
     logger.error('Transcribe audio error:', error);
     throw error;

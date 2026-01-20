@@ -247,7 +247,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {user?.skills ? (
-                      user.skills.split(',').map((skill, index) => (
+                      user.skills.map((skill: string, index: number) => (
                         <span
                           key={index}
                           className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"

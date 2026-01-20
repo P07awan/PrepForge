@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Download, ArrowLeft, Mail, Phone, MapPin, Linkedin, Globe, Briefcase, GraduationCap, Award, Code, CheckCircle } from 'lucide-react';
+import { FileText, Download, ArrowLeft, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Code, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Experience {
@@ -84,11 +84,11 @@ export default function ResumeMakerPage() {
     setFormData({ ...formData, projects: updated });
   };
 
-  const updateCertification = (index: number, field: keyof Certification, value: any) => {
-    const updated = [...formData.certifications];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, certifications: updated });
-  };
+  // const updateCertification = (index: number, field: keyof Certification, value: any) => {
+  //   const updated = [...formData.certifications];
+  //   updated[index] = { ...updated[index], [field]: value };
+  //   setFormData({ ...formData, certifications: updated });
+  // };
 
   const updateAchievement = (index: number, field: keyof Achievement, value: any) => {
     const updated = [...formData.achievements];
@@ -117,12 +117,12 @@ export default function ResumeMakerPage() {
     });
   };
 
-  const addCertification = () => {
-    setFormData({
-      ...formData,
-      certifications: [...formData.certifications, { name: '', issuer: '', date: '', link: '' }]
-    });
-  };
+  // const addCertification = () => {
+  //   setFormData({
+  //     ...formData,
+  //     certifications: [...formData.certifications, { name: '', issuer: '', date: '', link: '' }]
+  //   });
+  // };
 
   const addAchievement = () => {
     setFormData({
@@ -152,12 +152,12 @@ export default function ResumeMakerPage() {
     });
   };
 
-  const removeCertification = (index: number) => {
-    setFormData({
-      ...formData,
-      certifications: formData.certifications.filter((_, i) => i !== index)
-    });
-  };
+  // const removeCertification = (index: number) => {
+  //   setFormData({
+  //     ...formData,
+  //     certifications: formData.certifications.filter((_, i) => i !== index)
+  //   });
+  // };
 
   const removeAchievement = (index: number) => {
     setFormData({
